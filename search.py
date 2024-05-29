@@ -44,7 +44,7 @@ def makeRequest(params):
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
     }
 
-    # https://www.tesla.com/inventory/used/my?arrangeby=plh&zip=15206
+    # https://www.tesla.com/inventory/used/my?arrangeby=ylh&zip=15206
     response = requests.get(
         'https://www.tesla.com/inventory/api/v4/inventory-results',
         params=params,
@@ -55,7 +55,7 @@ def makeRequest(params):
 
 # https://tesla-api.timdorr.com/vehicle/optioncodes
 optionCodeValues = {
-    "$APF2": 3500, # FSD
+    "$APF2": 3250, # FSD
     "$DV4W": 1500, # AWD
     "$STY7S": 0, # 7 seater
     "$TW01": 800, # towing
@@ -76,6 +76,9 @@ def hasOptionCode(result, option):
 def hasCleanHistory(result):
     return result['VehicleHistory'] == 'CLEAN'
 
+def hasChargingConnector(result):
+   return result['IsChargingConnectorIncluded']
+
 def scoreResult(result):
     score = 39000
 
@@ -92,8 +95,11 @@ def scoreResult(result):
     score -= result['TransportationFee']
     score -= result['OrderFee']['value']
 
+    if(hasChargingConnector(result)):
+      score += 100
+
     if(isLongRange(result)):
-        score += 2500
+        score += 2800
 
     # check for accidents
     if(not hasCleanHistory(result)):
@@ -166,7 +172,7 @@ def search():
   print("\nSearch complete\n")
 
 def doSearch(scheduler):
-  scheduler.enter(60 * 10, 1, doSearch, (scheduler,))
+  scheduler.enter(60 * 30, 1, doSearch, (scheduler,))
   search()
 
 my_scheduler = sched.scheduler(time.time, time.sleep)
