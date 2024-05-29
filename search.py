@@ -18,10 +18,12 @@ def makeRequest(params):
 # https://tesla-api.timdorr.com/vehicle/optioncodes
 optionCodeValues = {
     "$APF2": 3500, # FSD
-    "$DV4W": 2500, # AWD
+    "$DV4W": 1500, # AWD
     "$STY7S": 0, # 7 seater
-    "$TW01": 1300, # towing
-    "$PBSB": -2000, # black paint
+    "$TW01": 1000, # towing
+    "$PBSB": -1000, # black paint
+    # Old models https://tesla-info.com/guide/tesla-model-y-buyers-guide.php
+    "$MTY06": -500,
 }
 
 def isLongRange(result):
@@ -32,21 +34,17 @@ def isLongRange(result):
 
 def hasOptionCode(result, option):
     return option in result['OptionCodeList']
-    # for codeData in result['OptionCodeData']:
-    #     if(codeData['code'] == option):
-    #         return True
-    # return False
 
 def hasCleanHistory(result):
     return result['VehicleHistory'] == 'CLEAN'
 
 def scoreResult(result):
-    score = 36000
+    score = 38000
 
     price = result['InventoryPrice']
 
     odometer = result['Odometer']
-    score -= (odometer / 5)
+    score -= (odometer / 4)
 
     year = result['Year']
     score -= ((2024 - year) * 3000)
@@ -55,11 +53,11 @@ def scoreResult(result):
     score -= result['OrderFee']['value']
 
     if(isLongRange(result)):
-        score += 2000
+        score += 2500
 
     # check for accidents
     if(not hasCleanHistory(result)):
-        score -= 10000
+        score -= 8000
 
     for key, value in optionCodeValues.items():
         if(hasOptionCode(result, key)):
@@ -67,20 +65,23 @@ def scoreResult(result):
     return score - price
 
 
-params = {
-    'query': '{"query":{"model":"my","condition":"used","arrangeby":"Year","order":"desc","market":"US","language":"en","super_region":"north america","PaymentType":"cash","lng":-79.9109,"lat":40.4725,"zip":"15206","range":0,"region":"PA"},"offset":0,"count":50,"outsideOffset":0,"outsideSearch":false,"isFalconDeliverySelectionEnabled":false,"version":null}',
-}
+totalMatches = 0
+offset = 0
+results = []
+increment = 50
+while len(results) == 0 or len(results) < totalMatches:
+  params = {
+      'query': '{"query":{"model":"my","condition":"used","arrangeby":"Year","order":"desc","market":"US","language":"en","super_region":"north america","PaymentType":"cash","lng":-79.9109,"lat":40.4725,"zip":"15206","range":0,"region":"PA"},"offset":%d,"count":%d,"outsideOffset":0,"outsideSearch":false,"isFalconDeliverySelectionEnabled":false,"version":null}' % (offset, increment),
+  }
+  data = makeRequest(params)
+  totalMatches = int(data['total_matches_found'])
+  offset += increment
+  results += data['results']
 
-data = makeRequest(params)
-
-
-totalMatches = data['total_matches_found']
 allScores = []
 bestScores = []
 totalScore = 0
-matchThreshold = 2000
-
-results = data['results']
+matchThreshold = 0
 for result in results:
     score = scoreResult(result)
     resultData = {'result': result, 'score': score}
@@ -91,7 +92,7 @@ for result in results:
 
 averageScore = totalScore / len(results)
 
-print(f"Count {totalMatches}\nAverage score:{averageScore}")
+print(f"Count {len(results)}\nAverage score:{averageScore}")
 print(f"Count of best scores: {len(bestScores)}")
 
 sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)  # Sort by value (score)
@@ -102,9 +103,12 @@ def makeUrl(result):
     return url
 
 # Access the sorted list
-for result in list(sorted_scores)[:3]:
+for result in list(sorted_scores)[:5]:
   url = makeUrl(result['result'])
   print(f"Score: {result['score']}\nUrl: {url}")
 
-# for score in bestScores:
-#     print(f"Best score: {score['score']}\nFull result:{score['result']}")
+for result in list(sorted_scores)[:1]:
+  print("Top result")
+  url = makeUrl(result['result'])
+  print(url)
+  print(pp(result))
