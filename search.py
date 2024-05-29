@@ -2,16 +2,40 @@ import requests
 from pprint import pp
 import os
 import csv
+import subprocess
+import sys
+
+matchThreshold = 0
 
 def generateLeaderboard(sorted_scores):
   icloud_drive_path = os.path.expanduser("~/Library/Mobile Documents/com~apple~CloudDocs/")
   leaderboard_file_path = os.path.join(icloud_drive_path, "best_used_teslas.csv")
+  shouldAlertNewValue = False
+
+  # Read existing top score from CSV (if file exists)
+  existing_top_score = -1
+  if os.path.exists(leaderboard_file_path):
+      with open(leaderboard_file_path, 'r') as csvfile:
+          reader = csv.reader(csvfile)
+          next(reader)  # Skip header row
+          for row in reader:
+              try:
+                  existing_top_score = int(row[0])
+                  break  # Stop after reading the first row
+              except ValueError:
+                  continue  # Ignore rows with invalid score form
+
   with open(leaderboard_file_path, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
     writer.writerow(['Score', 'URL'])  # Write header row
     for result in list(sorted_scores)[:10]:
       url = makeUrl(result['result'])
-      writer.writerow([result['score'], url])
+      score = int(result['score'])
+      writer.writerow([score, url])
+      if(score > existing_top_score and score > matchThreshold):
+          shouldAlertNewValue = True
+
+  return shouldAlertNewValue
 
 def makeRequest(params):
     headers = {
@@ -50,7 +74,7 @@ def hasCleanHistory(result):
     return result['VehicleHistory'] == 'CLEAN'
 
 def scoreResult(result):
-    score = 38000
+    score = 39000
 
     price = result['InventoryPrice']
 
@@ -75,7 +99,7 @@ def scoreResult(result):
     for key, value in optionCodeValues.items():
         if(hasOptionCode(result, key)):
             score += value
-    return score - price
+    return round(score - price, 2)
 
 
 totalMatches = 0
@@ -94,7 +118,6 @@ while len(results) == 0 or len(results) < totalMatches:
 allScores = []
 bestScores = []
 totalScore = 0
-matchThreshold = 0
 for result in results:
     score = scoreResult(result)
     resultData = {'result': result, 'score': score}
@@ -103,12 +126,14 @@ for result in results:
     if(score >= matchThreshold):
         bestScores.append(resultData)
 
-averageScore = totalScore / len(results)
+averageScore = round(totalScore / len(results), 2)
 
+print("\n")
 print(f"Count {len(results)}\nAverage score:{averageScore}")
 print(f"Count of best scores: {len(bestScores)}")
+print("\n")
 
-sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)  # Sort by value (score)
+sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)
 
 def makeUrl(result):
     vin = result['VIN']
@@ -120,10 +145,15 @@ for result in list(sorted_scores)[:5]:
   url = makeUrl(result['result'])
   print(f"Score: {result['score']}\nUrl: {url}")
 
-generateLeaderboard(sorted_scores)
-
-# for result in list(sorted_scores)[:1]:
-#   print("Top result")
-#   url = makeUrl(result['result'])
-#   print(url)
-#   print(pp(result))
+shouldAlert = generateLeaderboard(sorted_scores)
+if(shouldAlert and len(sys.argv) > 1):
+  phone_number = sys.argv[1]
+  print("\nNew top score, sending text to", phone_number)
+  url = makeUrl(sorted_scores[0]['result'])
+  message = f"New top score: {sorted_scores[0]['score']}\n{url}"
+  applescript_command = f'''
+  tell application "Messages"
+      send "{message}" to buddy "{phone_number}"
+  end tell
+  '''
+  subprocess.run(['osascript', '-e', applescript_command], check=True)
