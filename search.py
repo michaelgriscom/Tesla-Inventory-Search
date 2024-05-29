@@ -1,6 +1,17 @@
 import requests
 from pprint import pp
+import os
+import csv
 
+def generateLeaderboard(sorted_scores):
+  icloud_drive_path = os.path.expanduser("~/Library/Mobile Documents/com~apple~CloudDocs/")
+  leaderboard_file_path = os.path.join(icloud_drive_path, "best_used_teslas.csv")
+  with open(leaderboard_file_path, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Score', 'URL'])  # Write header row
+    for result in list(sorted_scores)[:10]:
+      url = makeUrl(result['result'])
+      writer.writerow([result['score'], url])
 
 def makeRequest(params):
     headers = {
@@ -108,6 +119,8 @@ def makeUrl(result):
 for result in list(sorted_scores)[:5]:
   url = makeUrl(result['result'])
   print(f"Score: {result['score']}\nUrl: {url}")
+
+generateLeaderboard(sorted_scores)
 
 # for result in list(sorted_scores)[:1]:
 #   print("Top result")
