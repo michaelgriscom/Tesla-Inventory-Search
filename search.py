@@ -101,6 +101,7 @@ def scoreResult(result):
             score += value
     return round(score - price, 2)
 
+print("Starting search...\n")
 
 totalMatches = 0
 offset = 0
@@ -148,7 +149,7 @@ for result in list(sorted_scores)[:5]:
 shouldAlert = generateLeaderboard(sorted_scores)
 if(shouldAlert and len(sys.argv) > 1):
   phone_number = sys.argv[1]
-  print("\nNew top score, sending text to", phone_number)
+  print(f"\nNew top score, sending text\n")
   url = makeUrl(sorted_scores[0]['result'])
   message = f"New top score: {sorted_scores[0]['score']}\n{url}"
   applescript_command = f'''
