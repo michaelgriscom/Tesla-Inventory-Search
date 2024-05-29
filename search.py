@@ -18,7 +18,7 @@ def makeRequest(params):
 # https://tesla-api.timdorr.com/vehicle/optioncodes
 optionCodeValues = {
     "$APF2": 3500, # FSD
-    "$DV4W": 3000, # AWD
+    "$DV4W": 2500, # AWD
     "$STY7S": 0, # 7 seater
     "$TW01": 1300, # towing
     "$PBSB": -2000, # black paint
@@ -31,16 +31,17 @@ def isLongRange(result):
     return False
 
 def hasOptionCode(result, option):
-    for codeData in result['OptionCodeData']:
-        if(codeData['code'] == option):
-            return True
-    return False
+    return option in result['OptionCodeList']
+    # for codeData in result['OptionCodeData']:
+    #     if(codeData['code'] == option):
+    #         return True
+    # return False
 
 def hasCleanHistory(result):
     return result['VehicleHistory'] == 'CLEAN'
 
 def scoreResult(result):
-    score = 33500
+    score = 36000
 
     price = result['InventoryPrice']
 
@@ -48,7 +49,7 @@ def scoreResult(result):
     score -= (odometer / 5)
 
     year = result['Year']
-    score -= ((2024 - year) * 4000)
+    score -= ((2024 - year) * 3000)
 
     score -= result['TransportationFee']
     score -= result['OrderFee']['value']
