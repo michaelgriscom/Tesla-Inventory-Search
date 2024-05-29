@@ -4,6 +4,8 @@ import os
 import csv
 import subprocess
 import sys
+import time
+import sched
 
 matchThreshold = 0
 
@@ -42,6 +44,7 @@ def makeRequest(params):
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
     }
 
+    # https://www.tesla.com/inventory/used/my?arrangeby=plh&zip=15206
     response = requests.get(
         'https://www.tesla.com/inventory/api/v4/inventory-results',
         params=params,
@@ -101,60 +104,73 @@ def scoreResult(result):
             score += value
     return round(score - price, 2)
 
-print("Starting search...\n")
-
-totalMatches = 0
-offset = 0
-results = []
-increment = 50
-while len(results) == 0 or len(results) < totalMatches:
-  params = {
-      'query': '{"query":{"model":"my","condition":"used","arrangeby":"Year","order":"desc","market":"US","language":"en","super_region":"north america","PaymentType":"cash","lng":-79.9109,"lat":40.4725,"zip":"15206","range":0,"region":"PA"},"offset":%d,"count":%d,"outsideOffset":0,"outsideSearch":false,"isFalconDeliverySelectionEnabled":false,"version":null}' % (offset, increment),
-  }
-  data = makeRequest(params)
-  totalMatches = int(data['total_matches_found'])
-  offset += increment
-  results += data['results']
-
-allScores = []
-bestScores = []
-totalScore = 0
-for result in results:
-    score = scoreResult(result)
-    resultData = {'result': result, 'score': score}
-    allScores.append(resultData)
-    totalScore += score
-    if(score >= matchThreshold):
-        bestScores.append(resultData)
-
-averageScore = round(totalScore / len(results), 2)
-
-print("\n")
-print(f"Count {len(results)}\nAverage score:{averageScore}")
-print(f"Count of best scores: {len(bestScores)}")
-print("\n")
-
-sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)
-
 def makeUrl(result):
     vin = result['VIN']
     url = f"https://www.tesla.com/my/order/{vin}?postal=15206&range=200&coord=40.4720642,-79.9136731&region=PA&titleStatus=used&redirect=no#overview"
     return url
 
-# Access the sorted list
-for result in list(sorted_scores)[:5]:
-  url = makeUrl(result['result'])
-  print(f"Score: {result['score']}\nUrl: {url}")
+def search():
+  print("Starting search...\n")
 
-shouldAlert = generateLeaderboard(sorted_scores)
-if(shouldAlert and len(sys.argv) > 1):
-  phone_number = sys.argv[1]
-  print(f"\nNew top score, sending text\n")
-  url = makeUrl(sorted_scores[0]['result'])
-  message = f"New top score: {sorted_scores[0]['score']}\n{url}"
-  applescript_command = f'''
-  tell application "Messages"
-      send "{message}" to buddy "{phone_number}"
-  end tell
-  '''
-  subprocess.run(['osascript', '-e', applescript_command], check=True)
+  totalMatches = 0
+  offset = 0
+  results = []
+  increment = 50
+  while len(results) == 0 or len(results) < totalMatches:
+    params = {
+        'query': '{"query":{"model":"my","condition":"used","arrangeby":"Year","order":"desc","market":"US","language":"en","super_region":"north america","PaymentType":"cash","lng":-79.9109,"lat":40.4725,"zip":"15206","range":0,"region":"PA"},"offset":%d,"count":%d,"outsideOffset":0,"outsideSearch":false,"isFalconDeliverySelectionEnabled":false,"version":null}' % (offset, increment),
+    }
+    data = makeRequest(params)
+    totalMatches = int(data['total_matches_found'])
+    offset += increment
+    results += data['results']
+
+  allScores = []
+  bestScores = []
+  totalScore = 0
+  for result in results:
+      score = scoreResult(result)
+      resultData = {'result': result, 'score': score}
+      allScores.append(resultData)
+      totalScore += score
+      if(score >= matchThreshold):
+          bestScores.append(resultData)
+
+  averageScore = round(totalScore / len(results), 2)
+
+  print("\n")
+  print(f"Count {len(results)}\nAverage score:{averageScore}")
+  print(f"Count of best scores: {len(bestScores)}")
+  print("\n")
+
+  sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)
+
+  # Access the sorted list
+  for result in list(sorted_scores)[:5]:
+    url = makeUrl(result['result'])
+    print(f"Score: {result['score']}\nUrl: {url}")
+
+  shouldAlert = generateLeaderboard(sorted_scores)
+  if(shouldAlert and len(sys.argv) > 1):
+    phone_number = sys.argv[1]
+    print(f"\nNew top score, sending text\n")
+    url = makeUrl(sorted_scores[0]['result'])
+    message = f"New top score: {sorted_scores[0]['score']}\n{url}"
+    applescript_command = f'''
+    tell application "Messages"
+        send "{message}" to buddy "{phone_number}"
+    end tell
+    '''
+    subprocess.run(['osascript', '-e', applescript_command], check=True)
+
+  print("\nSearch complete\n")
+
+def doSearch(scheduler):
+  scheduler.enter(60 * 10, 1, doSearch, (scheduler,))
+  search()
+
+my_scheduler = sched.scheduler(time.time, time.sleep)
+my_scheduler.enter(0, 1, doSearch, (my_scheduler,))
+my_scheduler.run()
+
+# search()
