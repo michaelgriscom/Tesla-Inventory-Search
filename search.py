@@ -20,8 +20,8 @@ optionCodeValues = {
     "$APF2": 3500, # FSD
     "$DV4W": 1500, # AWD
     "$STY7S": 0, # 7 seater
-    "$TW01": 1000, # towing
-    "$PBSB": -1000, # black paint
+    "$TW01": 800, # towing
+    "$PBSB": -500, # black paint
     # Old models https://tesla-info.com/guide/tesla-model-y-buyers-guide.php
     "$MTY06": -500,
 }
@@ -44,10 +44,12 @@ def scoreResult(result):
     price = result['InventoryPrice']
 
     odometer = result['Odometer']
-    score -= (odometer / 4)
+    # $0.20-$0.25 cents/mile
+    score -= (odometer / 4.5)
 
     year = result['Year']
-    score -= ((2024 - year) * 3000)
+    # year should probably be 2-3k
+    score -= ((2024 - year) * 2500)
 
     score -= result['TransportationFee']
     score -= result['OrderFee']['value']
@@ -107,8 +109,8 @@ for result in list(sorted_scores)[:5]:
   url = makeUrl(result['result'])
   print(f"Score: {result['score']}\nUrl: {url}")
 
-for result in list(sorted_scores)[:1]:
-  print("Top result")
-  url = makeUrl(result['result'])
-  print(url)
-  print(pp(result))
+# for result in list(sorted_scores)[:1]:
+#   print("Top result")
+#   url = makeUrl(result['result'])
+#   print(url)
+#   print(pp(result))
