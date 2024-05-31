@@ -29,11 +29,12 @@ def generateLeaderboard(sorted_scores):
 
   with open(leaderboard_file_path, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    writer.writerow(['Score', 'URL'])  # Write header row
+    writer.writerow(['Score', 'URL', 'Info url'])  # Write header row
     for result in list(sorted_scores)[:10]:
-      url = makeUrl(result['result'])
+      url = makePurchaseUrl(result['result'])
+      infoUrl = makeTeslaInfoUrl(result['result'])
       score = int(result['score'])
-      writer.writerow([score, url])
+      writer.writerow([score, url, infoUrl])
       if(score > existing_top_score and score > matchThreshold):
           shouldAlertNewValue = True
 
@@ -110,10 +111,15 @@ def scoreResult(result):
             score += value
     return round(score - price, 2)
 
-def makeUrl(result):
+def makePurchaseUrl(result):
     vin = result['VIN']
     url = f"https://www.tesla.com/my/order/{vin}?postal=15206&range=200&coord=40.4720642,-79.9136731&region=PA&titleStatus=used&redirect=no#overview"
     return url
+
+def makeTeslaInfoUrl(result):
+   vin = result['VIN']
+   url = f"https://tesla-info.com/car/US-{vin}"
+   return url
 
 def search():
   print("Starting search...\n")
@@ -153,15 +159,16 @@ def search():
 
   # Access the sorted list
   for result in list(sorted_scores)[:5]:
-    url = makeUrl(result['result'])
+    url = makePurchaseUrl(result['result'])
     print(f"Score: {result['score']}\nUrl: {url}")
 
   shouldAlert = generateLeaderboard(sorted_scores)
   if(shouldAlert and len(sys.argv) > 1):
     phone_number = sys.argv[1]
     print(f"\nNew top score, sending text\n")
-    url = makeUrl(sorted_scores[0]['result'])
-    message = f"New top score: {sorted_scores[0]['score']}\n{url}"
+    url = makePurchaseUrl(sorted_scores[0]['result'])
+    infoUrl = makeTeslaInfoUrl(sorted_scores[0]['result'])
+    message = f"New top score: {sorted_scores[0]['score']}\n{url}\n{infoUrl}"
     applescript_command = f'''
     tell application "Messages"
         send "{message}" to buddy "{phone_number}"
