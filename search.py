@@ -157,10 +157,16 @@ def search():
 
   sorted_scores = sorted(allScores, key=lambda x: x['score'], reverse=True)
 
+  print("Highest scores")
+
   # Access the sorted list
   for result in list(sorted_scores)[:5]:
-    url = makePurchaseUrl(result['result'])
+    url = makeTeslaInfoUrl(result['result'])
     print(f"Score: {result['score']}\nUrl: {url}")
+
+  print("\nLowest score")
+  url = makeTeslaInfoUrl(sorted_scores[-1]['result'])
+  print(f"Score: {sorted_scores[-1]['score']}\nUrl: {url}")
 
   shouldAlert = generateLeaderboard(sorted_scores)
   if(shouldAlert and len(sys.argv) > 1):
