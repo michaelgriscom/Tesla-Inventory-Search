@@ -31,6 +31,11 @@ updates; Tesla does provide the factory date for used vehicles, which could
 be used to better score the vehicles based on
 
 ### How to run
+```
+python search.py PHONE_NUMBER
+```
+
+Where `PHONE_NUMBER` is your phone number, e.g.:
 
 ```
 python search.py 5551234567
