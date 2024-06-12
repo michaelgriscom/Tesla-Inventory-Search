@@ -190,5 +190,3 @@ def doSearch(scheduler):
 my_scheduler = sched.scheduler(time.time, time.sleep)
 my_scheduler.enter(0, 1, doSearch, (my_scheduler,))
 my_scheduler.run()
-
-# search()
