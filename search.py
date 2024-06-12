@@ -45,7 +45,6 @@ def makeRequest(params):
         'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
     }
 
-    # https://www.tesla.com/inventory/used/my?arrangeby=ylh&zip=15206
     response = requests.get(
         'https://www.tesla.com/inventory/api/v4/inventory-results',
         params=params,
