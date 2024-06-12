@@ -1,8 +1,8 @@
-# Tesla Inventory Search
+# Tesla Used Car Tracker
 
 ## What this is
 
-Tesla's used cars follow a dynamic pricing model, the first order approximation
+tesla.com's used cars follow a dynamic pricing model, the first order approximation
 of which is that the vehicle costs decrease by a few hundred dollars each day
 until a sale occurs
 
