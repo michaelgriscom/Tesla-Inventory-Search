@@ -33,7 +33,7 @@ def generateLeaderboard(sorted_scores):
     for result in list(sorted_scores)[:10]:
       url = makePurchaseUrl(result['result'])
       infoUrl = makeTeslaInfoUrl(result['result'])
-      score = int(result['score'])
+      score = result['score']
       writer.writerow([score, url, infoUrl])
       if(score > existing_top_score and score > matchThreshold):
           shouldAlertNewValue = True
@@ -59,8 +59,8 @@ optionCodeValues = {
     "$APF2": 3250, # FSD
     "$DV4W": 1500, # AWD
     "$STY7S": 0, # 7 seater
-    "$TW01": 800, # towing
-    "$PBSB": -500, # black paint
+    "$TW01": 750, # towing
+    "$PBSB": -100, # black paint
     # Old models https://tesla-info.com/guide/tesla-model-y-buyers-guide.php
     "$MTY06": -500,
 }
@@ -109,7 +109,7 @@ def scoreResult(result):
     for key, value in optionCodeValues.items():
         if(hasOptionCode(result, key)):
             score += value
-    return round(score - price, 2)
+    return round(score - price)
 
 def makePurchaseUrl(result):
     vin = result['VIN']
@@ -148,7 +148,7 @@ def search():
       if(score >= matchThreshold):
           bestScores.append(resultData)
 
-  averageScore = round(totalScore / len(results), 2)
+  averageScore = round(totalScore / len(results))
 
   print("\n")
   print(f"Count {len(results)}\nAverage score:{averageScore}")
