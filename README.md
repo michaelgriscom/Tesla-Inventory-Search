@@ -4,7 +4,7 @@
 
 tesla.com's used cars follow a dynamic pricing model, the first order approximation
 of which is that the vehicle costs decrease by a few hundred dollars each day
-until a sale occurs
+until a sale occurs (a [Dutch auction](https://en.wikipedia.org/wiki/Dutch_auction))
 
 This repo contains a Python script which:
 - Runs a periodic search of used Tesla inventory
